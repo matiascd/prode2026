@@ -48,20 +48,28 @@
         if (session) updateUIAfterLogin(session.user);
     }
 
-    async function handleAuth(isLogin) {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+async function handleAuth(isLogin) {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const nombre = document.getElementById('nombre').value; // Agrega un input con id="nombre" en tu HTML
 
-        if (isLogin) {
-            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-            if (error) alert(error.message);
-            else location.reload();
-        } else {
-            const { error } = await supabaseClient.auth.signUp({ email, password });
-            if (error) alert(error.message);
-            else alert('¡Registro exitoso! Ya puedes iniciar sesión.');
-        }
+    if (isLogin) {
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) alert(error.message);
+        else location.reload();
+    } else {
+        // Al registrarse, pasamos el nombre en el metadata
+        const { error } = await supabaseClient.auth.signUp({ 
+            email, 
+            password,
+            options: {
+                data: { nombre: nombre }
+            }
+        });
+        if (error) alert(error.message);
+        else alert('¡Registro exitoso! Ya puedes ingresar.');
     }
+}
 
     function showAuthModal() {
         document.getElementById('app-view').innerHTML = `
