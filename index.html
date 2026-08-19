@@ -12,15 +12,15 @@
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col justify-between">
 
     <!-- Header / Navbar -->
-    <header class="bg-slate-800 border-b border-slate-700 shadow-md">
-        <div class="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
-            <h1 class="text-xl font-bold tracking-wider text-emerald-400">⚽ PRODE CLAUSURA</h1>
-            <div id="auth-section">
-                <!-- Se inyecta dinámicamente si el usuario está logueado o no -->
-                <button onclick="loginWithGoogle()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Ingresar con Google</button>
-            </div>
+<!-- Header con botón de login genérico -->
+<header class="bg-slate-800 border-b border-slate-700 shadow-md">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
+        <h1 class="text-xl font-bold tracking-wider text-emerald-400">⚽ PRODE CLAUSURA</h1>
+        <div id="auth-section">
+            <button onclick="showAuthModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Acceder / Registrarse</button>
         </div>
-    </header>
+    </div>
+</header>
 
     <!-- Main Content Container -->
     <main class="max-w-5xl mx-auto px-4 py-8 flex-grow w-full">
@@ -38,169 +38,60 @@
     ></footer>
 
     <!-- Script de lógica de la aplicación -->
-<script>
-        // Configuración de Supabase
-        const SUPABASE_URL = 'https://bsobpicsjibsuklgqspw.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzb2JwaWNzamlic3VrbGdxc3B3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwNjA5NDYsImV4cCI6MjEwMjYzNjk0Nn0.e0F1cYduq2C_2jO3xbNfxbjKBvH509sUdDNUCpPJ5y0';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+ <script>
+    const SUPABASE_URL = 'https://bsobpicsjibsuklgqspw.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzb2JwaWNzamlic3VrbGdxc3B3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwNjA5NDYsImV4cCI6MjEwMjYzNjk0Nn0.e0F1cYduq2C_2jO3xbNfxbjKBvH509sUdDNUCpPJ5y0';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Escuchar cambios de autenticación en tiempo real (vital para OAuth)
-        supabaseClient.auth.onAuthStateChange(async (event, session) => {
-            if (session) {
-                // Limpia el token de la barra de direcciones de forma limpia
-                if (window.location.hash) {
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                }
-                updateUIAfterLogin(session.user);
-            } else {
-                updateUIAfterLogout();
-            }
-        });
+    async function checkUser() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) updateUIAfterLogin(session.user);
+    }
 
-        async function checkUser() {
-            // Intentar obtener la sesión actual al cargar
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) {
-                updateUIAfterLogin(session.user);
-            } else {
-                updateUIAfterLogout();
-            }
+    async function handleAuth(isLogin) {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        if (isLogin) {
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) alert(error.message);
+            else location.reload();
+        } else {
+            const { error } = await supabaseClient.auth.signUp({ email, password });
+            if (error) alert(error.message);
+            else alert('¡Registro exitoso! Ya puedes iniciar sesión.');
         }
+    }
 
-        async function loginWithGoogle() {
-            const { error } = await supabaseClient.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: window.location.origin + window.location.pathname
-                }
-            });
-            if (error) alert('Error al iniciar sesión: ' + error.message);
-        }
-
-        async function logout() {
-            await supabaseClient.auth.signOut();
-            window.location.href = window.location.pathname;
-        }
-
-        function updateUIAfterLogin(user) {
-            const authSection = document.getElementById('auth-section');
-            authSection.innerHTML = `
-                <div class="flex items-center gap-4">
-                    <span class="text-sm text-slate-300">Hola, <b>${user.user_metadata?.full_name || user.email}</b></span>
-                    <button onclick="logout()" class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded text-xs transition">Salir</button>
+    function showAuthModal() {
+        document.getElementById('app-view').innerHTML = `
+            <div class="max-w-md mx-auto bg-slate-800 p-8 rounded-xl border border-slate-700 shadow-lg">
+                <h2 class="text-xl font-bold mb-6 text-center">Acceso al Prode</h2>
+                <input type="email" id="email" placeholder="Email" class="w-full p-2 mb-4 bg-slate-900 border border-slate-600 rounded text-white">
+                <input type="password" id="password" placeholder="Contraseña" class="w-full p-2 mb-6 bg-slate-900 border border-slate-600 rounded text-white">
+                <div class="flex gap-2">
+                    <button onclick="handleAuth(true)" class="flex-1 bg-emerald-600 py-2 rounded font-bold hover:bg-emerald-500">Ingresar</button>
+                    <button onclick="handleAuth(false)" class="flex-1 bg-slate-700 py-2 rounded font-bold hover:bg-slate-600">Registrarse</button>
                 </div>
-            `;
-            loadDashboard(user);
-        }
+            </div>
+        `;
+    }
 
-        function updateUIAfterLogout() {
-            const authSection = document.getElementById('auth-section');
-            authSection.innerHTML = `
-                <button onclick="loginWithGoogle()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Ingresar con Google</button>
-            `;
-            document.getElementById('app-view').innerHTML = `
-                <div class="text-center py-12">
-                    <h2 class="text-2xl font-bold mb-4">¡Bienvenido al Prode de la Empresa!</h2>
-                    <p class="text-slate-400 max-w-lg mx-auto mb-6">Iniciá sesión con tu cuenta para completar tus pronósticos y ver la tabla de posiciones.</p>
-                </div>
-            `;
-        }
+    async function logout() {
+        await supabaseClient.auth.signOut();
+        location.reload();
+    }
 
-        async function loadDashboard(user) {
-            const view = document.getElementById('app-view');
-            view.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="md:col-span-2 bg-slate-800 p-6 rounded-xl border border-slate-700 shadow">
-                        <h3 class="text-lg font-bold mb-4 text-emerald-400">📅 Mis Pronósticos - Fecha Actual</h3>
-                        <div id="fixture-container" class="space-y-4">
-                            <p class="text-slate-400">Cargando partidos de la fecha...</p>
-                        </div>
-                    </div>
-                    <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow">
-                        <h3 class="text-lg font-bold mb-4 text-emerald-400">🏆 Tabla de Posiciones</h3>
-                        <div id="standings-container">
-                            <p class="text-slate-400">Calculando posiciones...</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-            fetchFixture(user.id);
-            fetchStandings();
-        }
+    function updateUIAfterLogin(user) {
+        document.getElementById('auth-section').innerHTML = `
+            <span class="text-sm mr-4 text-slate-300">${user.email}</span>
+            <button onclick="logout()" class="bg-rose-600 px-3 py-1 rounded text-xs">Salir</button>
+        `;
+        loadDashboard(user);
+    }
 
-        async function fetchFixture(userId) {
-            const { data: partidos, error } = await supabaseClient
-                .from('partidos')
-                .select('*')
-                .eq('fecha_nro', 1);
-
-            const container = document.getElementById('fixture-container');
-            if (error || !partidos || !partidos.length) {
-                container.innerHTML = `<p class="text-slate-400">No hay partidos cargados para esta fecha todavía.</p>`;
-                return;
-            }
-
-            const { data: pronosticos } = await supabaseClient
-                .from('pronosticos')
-                .select('*')
-                .eq('user_id', userId);
-
-            container.innerHTML = partidos.map(p => {
-                const userPred = pronosticos?.find(pr => pr.partido_id === p.id) || { pred_local: '', pred_visitante: '' };
-                return `
-                    <div class="flex items-center justify-between bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
-                        <span class="w-1/3 text-right font-medium pr-2 truncate">${p.local}</span>
-                        <div class="flex items-center gap-2">
-                            <input type="number" min="0" value="${userPred.pred_local}" id="local-${p.id}" class="w-12 text-center bg-slate-700 border border-slate-600 rounded p-1 text-white font-bold">
-                            <span>-</span>
-                            <input type="number" min="0" value="${userPred.pred_visitante}" id="visitante-${p.id}" class="w-12 text-center bg-slate-700 border border-slate-600 rounded p-1 text-white font-bold">
-                            <button onclick="savePrediction(${p.id}, '${userId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded text-xs font-bold transition">Guardar</button>
-                        </div>
-                        <span class="w-1/3 text-left font-medium pl-2 truncate">${p.visitante}</span>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        async function savePrediction(partidoId, userId) {
-            const predLocal = parseInt(document.getElementById(`local-${partidoId}`).value);
-            const predVisitante = parseInt(document.getElementById(`visitante-${partidoId}`).value);
-
-            if (isNaN(predLocal) || isNaN(predVisitante)) {
-                alert('Por favor completa ambos marcadores.');
-                return;
-            }
-
-            const { error } = await supabaseClient
-                .from('pronosticos')
-                .upsert({ user_id: userId, partido_id: partidoId, pred_local: predLocal, pred_visitante: predVisitante, updated_at: new Date() }, { onConflict: ['user_id', 'partido_id'] });
-
-            if (error) {
-                alert('Error al guardar: ' + error.message);
-            } else {
-                alert('¡Pronóstico guardado con éxito!');
-            }
-        }
-
-        async function fetchStandings() {
-            const container = document.getElementById('standings-container');
-            container.innerHTML = `
-                <table class="w-full text-left text-sm">
-                    <thead>
-                        <tr class="border-b border-slate-700 text-slate-400">
-                            <th class="py-2">Participante</th>
-                            <th class="py-2 text-right">Pts</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td class="py-2 text-slate-400">Sin datos aún</td><td class="text-right"></td></tr>
-                    </tbody>
-                </table>
-            `;
-        }
-
-        // Inicializar comprobación de sesión
-        checkUser();
-    </script>
+    // Mantén las funciones loadDashboard, fetchFixture, etc., que ya tenías.
+    checkUser();
+</script>
 </body>
 </html>
